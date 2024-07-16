@@ -13,3 +13,5 @@
 - branch:
   - `2-kis-intro-skeleton`
   - `2-kis-intro-sol`
+  - `3-kis-korea-skeleton`
+  - `3-kis-korea-sol`
