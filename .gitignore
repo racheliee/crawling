@@ -1,9 +1,1 @@
 .DS_Store
-stock_data.xlsx
-*.exe
-kis_keys.txt
-kosdaq_code.*
-kospi_code.*
-token.dat
-api-crawling.py
-kis.py
