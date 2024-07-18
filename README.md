@@ -10,9 +10,15 @@
 ## week 2
 - 주식 자동 매매 프로그램 intro
 - 한국투자증권 openAPI를 이용
-- 종목 조회 및 국내 주식 매수/매도
 - branch:
   - `2-kis-intro-skeleton`
   - `2-kis-intro-sol`
+
+## week 3
+- 국내 주식 종목 조회 및 국내 주식 매수/매도 
+- 텔레그램을 이용해 bot 만들기
+- branch:
   - `3-kis-korea-skeleton`
   - `3-kis-korea-sol`
+  - `4-telegram-skeleton`
+  - `4-telegram-sol`
