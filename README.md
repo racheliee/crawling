@@ -16,9 +16,13 @@
 
 ## week 3
 - 국내 주식 종목 조회 및 국내 주식 매수/매도 
-- 텔레그램을 이용해 bot 만들기
 - branch:
   - `3-kis-korea-skeleton`
   - `3-kis-korea-sol`
+
+## week 4
+- 텔레그램을 이용해 bot 만들기
+- 기본 command, 시간별 주식 내용 보고 등
+- branch:
   - `4-telegram-skeleton`
   - `4-telegram-sol`
