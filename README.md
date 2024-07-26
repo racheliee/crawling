@@ -22,7 +22,8 @@
 
 ## week 4
 - 텔레그램을 이용해 bot 만들기
-- 기본 command, 시간별 주식 내용 보고 등
+- command handler, job queue 등 이용
+- 주식 정보, 특정 가격 도달, 주기적 업데이트, 관심종목 알림 등 구현
 - branch:
   - `4-telegram-skeleton`
   - `4-telegram-sol`
