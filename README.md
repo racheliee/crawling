@@ -27,3 +27,5 @@
 - branch:
   - `4-telegram-skeleton`
   - `4-telegram-sol`
+
+![chat bot demo](assets/image.png)
