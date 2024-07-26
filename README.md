@@ -28,4 +28,5 @@
   - `4-telegram-skeleton`
   - `4-telegram-sol`
 
+<img src= "assets/image.png" width="500">
 ![chat bot demo](assets/image.png)
