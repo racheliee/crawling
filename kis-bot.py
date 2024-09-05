@@ -1,14 +1,15 @@
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import pandas as pd
 import mojito
-import logging
+import logging # pip install logging
 
 # Global variables
 # broker = None
 broker_mock = None
 bot = None
 CHAT_ID = None
-fav_symbols = {"005930", "373220"}  # 삼성전자, 엔솔; set으로 관리해야 중복값 방지
+fav_symbols = set() #{} => dictionary
+# {"005930", "373220"}  # 삼성전자, 엔솔; set으로 관리해야 중복값 방지
 all_symbols = None
 
 
@@ -19,8 +20,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Initialize global variables
-
-
 def initialize_globals():
     global broker, broker_mock, bot, CHAT_ID, all_symbols
 
@@ -61,13 +60,18 @@ def initialize_globals():
         acc_no=KIS_MOCK_ACC_NO,
         mock=True
     )
+    
+    # initalize favorite symbols
+    with open("./favourites.txt", "r") as fav_file:
+        lines = fav_file.readlines()
+        for symbol in lines:
+            fav_symbols.add(symbol.strip())
+        # fav_symbols = {symbol.strip() for symbol in fav_symbols}
 
     # all_symbols = broker.fetch_symbols()
     all_symbols = broker_mock.fetch_symbols()
 
 # Function to send a message via Telegram bot
-
-
 def send_message(bot, chat_id, message):
     bot.send_message(chat_id=chat_id, text=message)
 
@@ -76,7 +80,7 @@ def help(update, context):
     help_message = ("kis-bot 도움말:\n"
                     "-------------------------\n"
                     "/balance: 잔액 조회\n"
-                    "/day_info: 오늘의 괌심 주식 정보 조회\n"
+                    "/day_info: 오늘의 관심 주식 정보 조회\n"
                     "/find_symbol [주식명]: 주식 종목코드 찾기\n"
                     "/favorites: 관심종목 조회\n"
                     "/add_to_fav [종목코드]: 관심종목 추가\n"
@@ -89,15 +93,50 @@ def help(update, context):
 
 
 def balance(update, context):  # update is the message from the user, context is the bot
-    # TODO: implement balance function
-    pass
+    balance = broker_mock.fetch_balance() # broker.fetch_balance()
+    
+    balance_message = "current balance: \n"
+    for comp in balance['output1']:
+        balance_message += f"종목이름: {comp['prdt_name']}\n"
+        balance_message += f"보유수량: {comp['hldg_qty']}\n"
+        balance_message += f"매입금액: {comp['pchs_amt']}\n"
+        balance_message += f"평가금액: {comp['evlu_amt']}\n"
+        balance_message += "-" * 40 + "\n"
+        
+    for comp in balance['output2']:
+        balance_message += f"예수금: {comp['dnca_tot_amt']}\n"
+        balance_message += f"총평가금액: {comp['tot_evlu_amt']}\n"
+    
+    send_message(context.bot, update.message.chat_id, balance_message)
 
 
 def day_info(update, context):
-    # TODO: implement day_info function
-    pass
-
-
+    day_message = "오늘의 주식 정보:\n"
+    
+    for symbol in fav_symbols:
+        day_candlestick = broker_mock.fetch_ohlcv(
+            symbol=symbol,
+            timeframe='D',
+            adj_price=True
+        )
+        
+        day_df = pd.DataFrame(day_candlestick['output2'])
+        day_dt = pd.to_datetime(day_df['stck_bsop_date'], format="%Y%m%d")
+        day_df.set_index(day_dt, inplace=True)
+        day_df = day_df[['stck_oprc', 'stck_hgpr', 'stck_lwpr', 'stck_clpr']]
+        day_df.columns = ['open', 'high', 'low', 'close']
+        day_df.index.name = "date"
+        
+        latest_day = day_df.iloc[0]
+        day_message += f"\n종목이름: {day_candlestick['output1']['hts_kor_isnm']}\n"
+        day_message += f"시가: {latest_day['open']}\n"
+        day_message += f"고가: {latest_day['high']}\n"
+        day_message += f"저가: {latest_day['low']}\n"
+        day_message += f"종가: {latest_day['close']}\n"
+        day_message += '-'*40 + '\n'
+        
+    send_message(context.bot, update.message.chat_id, day_message)
+        
 def find_symbol(update, context):
     # Parse the message
     message = update.message.text
@@ -108,18 +147,61 @@ def find_symbol(update, context):
         send_message(context.bot, update.message.chat_id, "종목명을 입력해주세요.")
         return
 
-    # TODO: implement find_symbol function
-
+    name = message[1] # 찾고 싶은 종목
+    
+    # find the symbol
+    found_symbols = all_symbols[all_symbols['한글명'].str.contains(name)]
+    
+    # create message
+    response_message = "주식명 (종목코드): \n"
+    response_message += "-" * 40 + "\n";
+    
+    if found_symbols.empty:
+        response_message += "해당 종목이름을 찾지 못했습니다"
+    else:
+        for i in range(len(found_symbols)):
+            response_message += f"{found_symbols.iloc[i]['한글명']} ({found_symbols.iloc[i]['단축코드']})\n" #현대차 (001500)
+            
+    send_message(context.bot, update.message.chat_id, response_message)
 
 def favorites(update, context):
-    # TODO: implement favorites function
-    pass
+    fav_message = "관심종목: \n"
+    fav_message += "-" * 40 + "\n"
+    
+    for sym in fav_symbols:
+        fav_message += f"{all_symbols[all_symbols['단축코드'] == sym]['한글명'].values[0]} "
+        fav_message += f"{sym}\n"
+    
+    send_message(context.bot, update.message.chat_id, fav_message);
+    
 
 
 def add_to_fav(update, context):
-   # TODO: implement add_to_fav function
-    pass
-
+    # parse the message
+    message = update.message.text
+    message = message.split(" ")
+    
+    # check if message has a code
+    if len(message) < 2:
+        send_message(context.bot, update.message.chat_id, "종목코드를 입력해주세요")
+        return
+    
+    symbol = message[1]
+    
+    # check if symbol is valid
+    if symbol not in all_symbols['단축코드'].values:
+        send_message(context.bot, update.message.chat_id, "유효하지 않은 종목코드입니다")
+        return
+    
+    # add symbol
+    fav_symbols.add(symbol)
+     
+    # update the text file
+    with open("./favourites.txt", "a") as fav_file:
+        fav_file.write("\n" + symbol) # file 끝에 newline 있으면 안됨
+    
+    send_message(context.bot, update.message.chat_id, f"{symbol}이/가 관심종목에 추가 되었습니다")
+        
 
 def remove_from_fav(update, context):
     # TODO: implement remove_from_fav function
@@ -192,7 +274,12 @@ def main():
     dp = bot.dispatcher
 
     # Command handlers
-    dp.add_handler(CommandHandler('help', help))
+    dp.add_handler(CommandHandler('help', help)) # '/help' --> help()
+    dp.add_handler(CommandHandler('balance', balance)) #'balance' --> balance()
+    dp.add_handler(CommandHandler('day_info', day_info))
+    dp.add_handler(CommandHandler('find_symbol', find_symbol))
+    dp.add_handler(CommandHandler('favorites', favorites))
+    dp.add_handler(CommandHandler("add_to_fav", add_to_fav))
     # TODO: add the rest of the command handlers
 
     # JobQueue to send hourly updates
