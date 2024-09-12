@@ -29,3 +29,9 @@
   - `4-telegram-sol`
 
 <img src= "assets/image.png" width="500">
+
+# SRT reservation system
+- SRT 예매 시스템 구현
+- branch:
+  - `5-srt-sol`
+  - 이번에는 skeleton이 없습니다. 직접 구현해보세요!
